@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: Arial;
-      max-width: 600px;
+      max-width: 700px;
       margin: 40px auto;
     }
 
@@ -27,154 +27,121 @@
 
   <h1>SEO Score</h1>
 
-  <input id="url" placeholder="Cole a URL (https://...)" />
-  <input id="keyword" placeholder="Palavra-chave" />
+  <input id="url" placeholder="Cole a URL" />
+  <input id="keyword" placeholder="Palavras-chave (opcional, separadas por vírgula)" />
 
   <button onclick="analisar()">Analisar</button>
 
-  <div id="resultado"></div>
+  <div id="resultado" class="result"></div>
 
- <script>
-async function analisar() {
-  const url = document.getElementById("url").value;
-  const keywordInput = document.getElementById("keyword").value.toLowerCase();
+  <script>
+  async function analisar() {
+    const url = document.getElementById("url").value;
+    const keywordInput = document.getElementById("keyword").value.toLowerCase();
 
-  const keywords = keywordInput
-    .split(",")
-    .map(k => k.trim())
-    .filter(k => k);
+    const keywords = keywordInput
+      .split(",")
+      .map(k => k.trim())
+      .filter(k => k);
 
-  const response = await fetch("/api/analyze", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ url })
-  });
-
-  const data = await response.json();
-
-  let score = 0;
-  let total = 100;
-
-  let checks = [];
-  let sugestoes = [];
-  let keywordAnalise = [];
-
-  // =====================
-  // SCORE TÉCNICO
-  // =====================
-
-  // TITLE
-  if (data.title) {
-    score += 25;
-    checks.push("✔️ Title encontrado");
-  } else {
-    checks.push("❌ Title não encontrado");
-    sugestoes.push("Adicione um title à página");
-  }
-
-  // H1
-  if (data.h1) {
-    score += 25;
-    checks.push("✔️ H1 encontrado");
-  } else {
-    checks.push("❌ H1 não encontrado");
-    sugestoes.push("Adicione um H1");
-  }
-
-  // META
-  if (data.meta) {
-    score += 25;
-    checks.push("✔️ Meta description presente");
-  } else {
-    checks.push("❌ Meta description ausente");
-    sugestoes.push("Adicione uma meta description");
-  }
-
-  // TAMANHO
-  if (data.length > 300 && data.length < 200000) {
-    score += 25;
-    checks.push("✔️ Conteúdo com tamanho adequado");
-  } else {
-    checks.push("⚠️ Conteúdo fora do ideal");
-    sugestoes.push("Ajuste o conteúdo (ideal entre 300 e 2000 palavras)");
-  }
-
-  // =====================
-  // ANÁLISE DE KEYWORDS
-  // =====================
-
-  if (keywords.length > 0) {
-    keywords.forEach(keyword => {
-      let encontrada = false;
-
-      if (data.title && data.title.toLowerCase().includes(keyword)) {
-        keywordAnalise.push(`✔️ "${keyword}" no Title`);
-        encontrada = true;
-      }
-
-      if (data.h1 && data.h1.toLowerCase().includes(keyword)) {
-        keywordAnalise.push(`✔️ "${keyword}" no H1`);
-        encontrada = true;
-      }
-
-      if (!encontrada) {
-        keywordAnalise.push(`❌ "${keyword}" não encontrada em Title ou H1`);
-        sugestoes.push(`Considere incluir "${keyword}" no Title ou H1`);
-      }
+    const response = await fetch("/api/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ url })
     });
-  }
 
-  // =====================
-  // CLASSIFICAÇÃO
-  // =====================
+    const data = await response.json();
 
-  let nivel = "Ruim";
-  let cor = "🔴";
+    let score = 0;
+    let checks = [];
+    let sugestoes = [];
+    let keywordAnalise = [];
 
-  if (score >= 80) {
-    nivel = "Excelente";
-    cor = "🟢";
-  } else if (score >= 50) {
-    nivel = "Bom";
-    cor = "🟡";
-  }
-
-  // =====================
-  // OUTPUT FINAL
-  // =====================
-
-  document.getElementById("resultado").innerHTML = `
-    <h2>Score técnico: ${score}/${total} - ${cor} ${nivel}</h2>
-
-    <h3>📊 Diagnóstico técnico</h3>
-    ${checks.map(c => `<p>${c}</p>`).join("")}
-
-    <hr>
-
-    <h3>💡 Sugestões</h3>
-    ${sugestoes.length > 0 
-      ? sugestoes.map(s => `<p>👉 ${s}</p>`).join("")
-      : "<p>🎉 Nenhuma melhoria crítica</p>"
+    // SCORE
+    if (data.title) {
+      score += 25;
+      checks.push("✔️ Title encontrado");
+    } else {
+      checks.push("❌ Title não encontrado");
     }
 
-    ${
-      keywords.length > 0
+    if (data.h1) {
+      score += 25;
+      checks.push("✔️ H1 encontrado");
+    } else {
+      checks.push("❌ H1 não encontrado");
+    }
+
+    if (data.meta) {
+      score += 25;
+      checks.push("✔️ Meta description presente");
+    } else {
+      checks.push("❌ Meta description ausente");
+    }
+
+    if (data.length > 300 && data.length < 200000) {
+      score += 25;
+      checks.push("✔️ Conteúdo com tamanho adequado");
+    } else {
+      checks.push("⚠️ Conteúdo fora do ideal");
+    }
+
+    // KEYWORDS
+    if (keywords.length > 0) {
+      keywords.forEach(keyword => {
+        if (data.title?.toLowerCase().includes(keyword) || data.h1?.toLowerCase().includes(keyword)) {
+          keywordAnalise.push(`✔️ "${keyword}" encontrada`);
+        } else {
+          keywordAnalise.push(`❌ "${keyword}" não encontrada`);
+        }
+      });
+    }
+
+    // NIVEL
+    let nivel = "Ruim";
+    let cor = "🔴";
+
+    if (score >= 80) {
+      nivel = "Excelente";
+      cor = "🟢";
+    } else if (score >= 50) {
+      nivel = "Médio";
+      cor = "🟡";
+    }
+
+    // OUTPUT
+    document.getElementById("resultado").innerHTML = `
+      <h2>Score: ${score}/100 - ${cor} ${nivel}</h2>
+
+      <h3>📊 Diagnóstico</h3>
+      ${checks.map(c => `<p>${c}</p>`).join("")}
+
+      <hr>
+
+      <h3>🔎 Palavras sugeridas</h3>
+      ${data.sugestoes.map(p => `<p>👉 ${p}</p>`).join("")}
+
+      ${
+        keywords.length > 0
         ? `
         <hr>
-        <h3>🔍 Análise de palavras-chave</h3>
+        <h3>🔍 Análise das suas palavras</h3>
         ${keywordAnalise.map(k => `<p>${k}</p>`).join("")}
         `
         : ""
-    }
+      }
 
-    <hr>
+      <hr>
 
-    <p><strong>Title:</strong> ${data.title}</p>
-    <p><strong>H1:</strong> ${data.h1}</p>
-    <p><strong>Meta description:</strong> ${data.meta}</p>
-    <p><strong>Tamanho do conteúdo:</strong> ${data.length} caracteres</p>
-  `;
-}
-</script>
+      <p><strong>Title:</strong> ${data.title}</p>
+      <p><strong>H1:</strong> ${data.h1}</p>
+      <p><strong>Meta:</strong> ${data.meta}</p>
+      <p><strong>Tamanho:</strong> ${data.length}</p>
+    `;
+  }
+  </script>
+
+</body>
+</html>
