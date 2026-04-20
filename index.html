@@ -1,62 +1,57 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8">
-  <title>SEO Score</title>
+<script>
+async function analisar() {
+  const url = document.getElementById("url").value;
+  const keyword = document.getElementById("keyword").value;
 
-  <style>
-    body {
-      font-family: Arial;
-      max-width: 600px;
-      margin: 40px auto;
-    }
+  const response = await fetch("/api/analyze", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ url, keyword })
+  });
 
-    input, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-    }
+  const data = await response.json();
 
-    .result {
-      margin-top: 20px;
-    }
-  </style>
-</head>
+  let score = 0;
+  let checks = "";
 
-<body>
+  if (data.title) {
+    score += 10;
+    checks += "✔️ Title encontrado<br>";
+  } else {
+    checks += "❌ Title não encontrado<br>";
+  }
 
-  <h1>SEO Score</h1>
+  if (data.h1) {
+    score += 10;
+    checks += "✔️ H1 encontrado<br>";
+  } else {
+    checks += "❌ H1 não encontrado<br>";
+  }
 
-  <input id="url" placeholder="Cole a URL (https://...)" />
-  <input id="keyword" placeholder="Palavra-chave" />
+  if (data.meta) {
+    score += 10;
+    checks += "✔️ Meta description presente<br>";
+  } else {
+    checks += "❌ Meta description ausente<br>";
+  }
 
-  <button onclick="analisar()">Analisar</button>
+  if (data.length > 300) {
+    score += 20;
+    checks += "✔️ Conteúdo relevante<br>";
+  } else {
+    checks += "❌ Conteúdo muito curto<br>";
+  }
 
-  <div id="resultado"></div>
-
-  <script>
-    async function analisar() {
-      const url = document.getElementById("url").value;
-      const keyword = document.getElementById("keyword").value;
-
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ url, keyword })
-      });
-
-      const data = await response.json();
-
-      document.getElementById("resultado").innerHTML = `
-        <p><strong>Title:</strong> ${data.title}</p>
-        <p><strong>H1:</strong> ${data.h1}</p>
-        <p><strong>Meta description:</strong> ${data.meta}</p>
-        <p><strong>Tamanho do conteúdo:</strong> ${data.length} caracteres</p>
-      `;
-    }
-  </script>
-
-</body>
-</html>
+  document.getElementById("resultado").innerHTML = `
+    <h2>Score: ${score}/50</h2>
+    ${checks}
+    <hr>
+    <p><strong>Title:</strong> ${data.title}</p>
+    <p><strong>H1:</strong> ${data.h1}</p>
+    <p><strong>Meta description:</strong> ${data.meta}</p>
+    <p><strong>Tamanho do conteúdo:</strong> ${data.length} caracteres</p>
+  `;
+}
+</script>
