@@ -34,7 +34,7 @@
 
   <div id="resultado"></div>
 
- <script>
+ <script>  
 async function analisar() {
   const url = document.getElementById("url").value;
   const keyword = document.getElementById("keyword").value;
@@ -76,12 +76,12 @@ async function analisar() {
     checks += "❌ Meta description ausente<br>";
   }
 
-  // TAMANHO DE CONTEÚDO
-  if (data.length > 300) {
+  // TAMANHO
+  if (data.length > 300 && data.length < 50000) {
     score += 10;
-    checks += "✔️ Conteúdo relevante<br>";
+    checks += "✔️ Conteúdo com tamanho adequado<br>";
   } else {
-    checks += "❌ Conteúdo muito curto<br>";
+    checks += "⚠️ Conteúdo muito curto ou muito grande<br>";
   }
 
   // KEYWORD NO TITLE
@@ -100,8 +100,14 @@ async function analisar() {
     checks += "❌ Palavra-chave não está no H1<br>";
   }
 
+  // NÍVEL
+  let nivel = "";
+  if (score >= 50) nivel = "🟢 Excelente";
+  else if (score >= 30) nivel = "🟡 Médio";
+  else nivel = "🔴 Fraco";
+
   document.getElementById("resultado").innerHTML = `
-    <h2>Score: ${score}/60</h2>
+    <h2>Score: ${score}/60 - ${nivel}</h2>
     ${checks}
     <hr>
     <p><strong>Title:</strong> ${data.title}</p>
