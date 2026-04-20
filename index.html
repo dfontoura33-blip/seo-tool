@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>SEO Score</title>
+  <style>
+    body {
+      font-family: Arial;
+      max-width: 600px;
+      margin: 40px auto;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+    }
+    .result {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>SEO Score</h1>
+
+<input id="url" placeholder="Cole a URL (https://...)" />
+<input id="keyword" placeholder="Palavra-chave" />
+
+<button onclick="analisar()">Analisar</button>
+
+<div class="result" id="resultado"></div>
+
+<script>
+async function analisar() {
+  const url = document.getElementById('url').value;
+  const keyword = document.getElementById('keyword').value;
+
+  const res = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, keyword })
+  });
+
+  const data = await res.json();
+
+  document.getElementById('resultado').innerHTML = `
+    <h2>Score: ${data.score}</h2>
+    <ul>
+      ${data.checks.map(c => `<li>${c}</li>`).join('')}
+    </ul>
+  `;
+}
+</script>
+
+</body>
+</html>
