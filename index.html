@@ -3,54 +3,60 @@
 <head>
   <meta charset="UTF-8">
   <title>SEO Score</title>
+
   <style>
     body {
       font-family: Arial;
       max-width: 600px;
       margin: 40px auto;
     }
+
     input, button {
       width: 100%;
       padding: 10px;
       margin-top: 10px;
     }
+
     .result {
       margin-top: 20px;
     }
   </style>
 </head>
+
 <body>
 
-<h1>SEO Score</h1>
+  <h1>SEO Score</h1>
 
-<input id="url" placeholder="Cole a URL (https://...)" />
-<input id="keyword" placeholder="Palavra-chave" />
+  <input id="url" placeholder="Cole a URL (https://...)" />
+  <input id="keyword" placeholder="Palavra-chave" />
 
-<button onclick="analisar()">Analisar</button>
+  <button onclick="analisar()">Analisar</button>
 
-<div class="result" id="resultado"></div>
+  <div id="resultado"></div>
 
-<script>
-async function analisar() {
-  const url = document.getElementById('url').value;
-  const keyword = document.getElementById('keyword').value;
+  <script>
+    async function analisar() {
+      const url = document.getElementById("url").value;
+      const keyword = document.getElementById("keyword").value;
 
-  const res = await fetch('/api/analyze', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url, keyword })
-  });
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ url, keyword })
+      });
 
-  const data = await res.json();
+      const data = await response.json();
 
-  document.getElementById('resultado').innerHTML = `
-    <h2>Score: ${data.score}</h2>
-    <ul>
-      ${data.checks.map(c => `<li>${c}</li>`).join('')}
-    </ul>
-  `;
-}
-</script>
+      document.getElementById("resultado").innerHTML = `
+        <p><strong>Title:</strong> ${data.title}</p>
+        <p><strong>H1:</strong> ${data.h1}</p>
+        <p><strong>Meta description:</strong> ${data.meta}</p>
+        <p><strong>Tamanho do conteúdo:</strong> ${data.length} caracteres</p>
+      `;
+    }
+  </script>
 
 </body>
 </html>
