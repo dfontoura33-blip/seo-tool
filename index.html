@@ -34,7 +34,7 @@
 
   <div id="resultado"></div>
 
- <script>  
+ <script>
 async function analisar() {
   const url = document.getElementById("url").value;
   const keyword = document.getElementById("keyword").value;
@@ -52,49 +52,49 @@ async function analisar() {
   let score = 0;
   let checks = "";
 
-  // TITLE
+  // TITLE (20)
   if (data.title) {
-    score += 10;
+    score += 20;
     checks += "✔️ Title encontrado<br>";
   } else {
     checks += "❌ Title não encontrado<br>";
   }
 
-  // H1
+  // H1 (20)
   if (data.h1) {
-    score += 10;
+    score += 20;
     checks += "✔️ H1 encontrado<br>";
   } else {
     checks += "❌ H1 não encontrado<br>";
   }
 
-  // META
+  // META (15)
   if (data.meta) {
-    score += 10;
+    score += 15;
     checks += "✔️ Meta description presente<br>";
   } else {
     checks += "❌ Meta description ausente<br>";
   }
 
-  // TAMANHO
+  // TAMANHO (15)
   if (data.length > 300 && data.length < 50000) {
-    score += 10;
+    score += 15;
     checks += "✔️ Conteúdo com tamanho adequado<br>";
   } else {
     checks += "⚠️ Conteúdo muito curto ou muito grande<br>";
   }
 
-  // KEYWORD NO TITLE
+  // KEYWORD TITLE (15)
   if (data.title && keyword && data.title.toLowerCase().includes(keyword.toLowerCase())) {
-    score += 10;
+    score += 15;
     checks += "✔️ Palavra-chave no Title<br>";
   } else {
     checks += "❌ Palavra-chave não está no Title<br>";
   }
 
-  // KEYWORD NO H1
+  // KEYWORD H1 (15)
   if (data.h1 && keyword && data.h1.toLowerCase().includes(keyword.toLowerCase())) {
-    score += 10;
+    score += 15;
     checks += "✔️ Palavra-chave no H1<br>";
   } else {
     checks += "❌ Palavra-chave não está no H1<br>";
@@ -102,12 +102,12 @@ async function analisar() {
 
   // NÍVEL
   let nivel = "";
-  if (score >= 50) nivel = "🟢 Excelente";
-  else if (score >= 30) nivel = "🟡 Médio";
+  if (score >= 80) nivel = "🟢 Excelente";
+  else if (score >= 50) nivel = "🟡 Médio";
   else nivel = "🔴 Fraco";
 
   document.getElementById("resultado").innerHTML = `
-    <h2>Score: ${score}/60 - ${nivel}</h2>
+    <h2>Score: ${score}/100 - ${nivel}</h2>
     ${checks}
     <hr>
     <p><strong>Title:</strong> ${data.title}</p>
