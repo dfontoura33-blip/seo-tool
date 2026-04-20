@@ -1,48 +1,59 @@
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
   const { url } = req.body;
 
   try {
     const response = await fetch(url);
     const html = await response.text();
 
-    // Função para decodificar HTML (corrige &#xE1; etc)
-    function decodeHtml(html) {
-      return html
-        .replace(/&#x([0-9A-Fa-f]+);/g, (_, hex) =>
-          String.fromCharCode(parseInt(hex, 16))
-        )
-        .replace(/&#([0-9]+);/g, (_, num) =>
-          String.fromCharCode(num)
-        );
-    }
-
     // TITLE
     const titleMatch = html.match(/<title>(.*?)<\/title>/i);
-    const title = titleMatch ? decodeHtml(titleMatch[1]) : null;
-
-    // META DESCRIPTION
-    const metaMatch = html.match(
-      /<meta\s+name=["']description["']\s+content=["'](.*?)["']/i
-    );
-    const meta = metaMatch ? decodeHtml(metaMatch[1]) : null;
+    const title = titleMatch ? titleMatch[1] : null;
 
     // H1
     const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
-    const h1 = h1Match ? decodeHtml(h1Match[1]) : null;
+    const h1 = h1Match ? h1Match[1].replace(/<[^>]+>/g, "") : null;
 
-    // TAMANHO DO CONTEÚDO
-    const textContent = html.replace(/<[^>]+>/g, "");
-    const length = textContent.length;
+    // META DESCRIPTION
+    const metaMatch = html.match(/<meta name="description" content="(.*?)"/i);
+    const meta = metaMatch ? metaMatch[1] : null;
+
+    // LIMPAR HTML → TEXTO
+    const text = html
+      .replace(/<script[^>]*>.*?<\/script>/gi, "")
+      .replace(/<style[^>]*>.*?<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .toLowerCase();
+
+    const words = text.split(/\s+/);
+
+    // STOPWORDS (palavras irrelevantes)
+    const stopwords = [
+      "de","a","o","e","do","da","em","um","para","com","não","uma",
+      "os","no","se","na","por","mais","as","dos","como","mas","foi",
+      "ao","ele","das","tem","à","seu","sua","ou","ser","quando","muito",
+      "há","nos","já","está","eu","também","só","pelo","pela","até"
+    ];
+
+    const freq = {};
+
+    words.forEach(word => {
+      if (word.length > 4 && !stopwords.includes(word)) {
+        freq[word] = (freq[word] || 0) + 1;
+      }
+    });
+
+    // TOP 5 palavras mais frequentes
+    const sugestoes = Object.entries(freq)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(item => item[0]);
 
     res.status(200).json({
       title,
-      meta,
       h1,
-      length
+      meta,
+      length: text.length,
+      sugestoes
     });
 
   } catch (error) {
