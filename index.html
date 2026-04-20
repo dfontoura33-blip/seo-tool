@@ -1,57 +1,102 @@
-<script>
-async function analisar() {
-  const url = document.getElementById("url").value;
-  const keyword = document.getElementById("keyword").value;
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>SEO Score</title>
 
-  const response = await fetch("/api/analyze", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ url, keyword })
-  });
+  <style>
+    body {
+      font-family: Arial;
+      max-width: 600px;
+      margin: 40px auto;
+    }
 
-  const data = await response.json();
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+    }
 
-  let score = 0;
-  let checks = "";
+    .result {
+      margin-top: 20px;
+    }
+  </style>
+</head>
 
-  if (data.title) {
-    score += 10;
-    checks += "✔️ Title encontrado<br>";
-  } else {
-    checks += "❌ Title não encontrado<br>";
-  }
+<body>
 
-  if (data.h1) {
-    score += 10;
-    checks += "✔️ H1 encontrado<br>";
-  } else {
-    checks += "❌ H1 não encontrado<br>";
-  }
+  <h1>SEO Score</h1>
 
-  if (data.meta) {
-    score += 10;
-    checks += "✔️ Meta description presente<br>";
-  } else {
-    checks += "❌ Meta description ausente<br>";
-  }
+  <input id="url" placeholder="Cole a URL (https://...)" />
+  <input id="keyword" placeholder="Palavra-chave" />
 
-  if (data.length > 300) {
-    score += 20;
-    checks += "✔️ Conteúdo relevante<br>";
-  } else {
-    checks += "❌ Conteúdo muito curto<br>";
-  }
+  <button onclick="analisar()">Analisar</button>
 
-  document.getElementById("resultado").innerHTML = `
-    <h2>Score: ${score}/50</h2>
-    ${checks}
-    <hr>
-    <p><strong>Title:</strong> ${data.title}</p>
-    <p><strong>H1:</strong> ${data.h1}</p>
-    <p><strong>Meta description:</strong> ${data.meta}</p>
-    <p><strong>Tamanho do conteúdo:</strong> ${data.length} caracteres</p>
-  `;
-}
-</script>
+  <div id="resultado"></div>
+
+  <script>
+    async function analisar() {
+      try {
+        const url = document.getElementById("url").value;
+        const keyword = document.getElementById("keyword").value;
+
+        const response = await fetch("/api/analyze", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ url, keyword })
+        });
+
+        const data = await response.json();
+
+        let score = 0;
+        let checks = "";
+
+        if (data.title) {
+          score += 10;
+          checks += "✔️ Title encontrado<br>";
+        } else {
+          checks += "❌ Title não encontrado<br>";
+        }
+
+        if (data.h1) {
+          score += 10;
+          checks += "✔️ H1 encontrado<br>";
+        } else {
+          checks += "❌ H1 não encontrado<br>";
+        }
+
+        if (data.meta) {
+          score += 10;
+          checks += "✔️ Meta description presente<br>";
+        } else {
+          checks += "❌ Meta description ausente<br>";
+        }
+
+        if (data.length > 300) {
+          score += 20;
+          checks += "✔️ Conteúdo relevante<br>";
+        } else {
+          checks += "❌ Conteúdo muito curto<br>";
+        }
+
+        document.getElementById("resultado").innerHTML = `
+          <h2>Score: ${score}/50</h2>
+          ${checks}
+          <hr>
+          <p><strong>Title:</strong> ${data.title}</p>
+          <p><strong>H1:</strong> ${data.h1}</p>
+          <p><strong>Meta description:</strong> ${data.meta}</p>
+          <p><strong>Tamanho do conteúdo:</strong> ${data.length} caracteres</p>
+        `;
+
+      } catch (erro) {
+        document.getElementById("resultado").innerHTML = "Erro ao analisar.";
+        console.error(erro);
+      }
+    }
+  </script>
+
+</body>
+</html>
