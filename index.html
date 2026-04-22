@@ -1,24 +1,36 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<title>SEO Tool PRO</title>
+  <meta charset="UTF-8">
+  <title>SEO Score PRO</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    body {
+      font-family: Arial;
+      max-width: 700px;
+      margin: 40px auto;
+    }
 
-<style>
-body { font-family: Arial; max-width: 800px; margin: 40px auto; }
-input, button { width:100%; padding:10px; margin-top:10px; }
-</style>
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+    }
+
+    .ok { color: green; }
+    .bad { color: red; }
+    .warn { color: orange; }
+
+    h2 { margin-top: 30px; }
+  </style>
 </head>
 
 <body>
 
-<h1>SEO Tool PRO</h1>
+<h1>SEO Score</h1>
 
-<input id="url" placeholder="Cole a URL"/>
+<input id="url" placeholder="Cole a URL (https://...)" />
 <button onclick="analisar()">Analisar</button>
-<button onclick="gerarPDF()">Exportar PDF</button>
 
 <div id="resultado"></div>
 
@@ -26,60 +38,85 @@ input, button { width:100%; padding:10px; margin-top:10px; }
 async function analisar() {
   const url = document.getElementById("url").value;
 
-  const res = await fetch("/api/analyze", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ url })
-  });
-
-  const data = await res.json();
-
-  if (data.error) {
-    document.getElementById("resultado").innerHTML = data.error;
+  if (!url) {
+    alert("Digite uma URL");
     return;
   }
 
-  document.getElementById("resultado").innerHTML = `
-    <h2>Score: ${data.score}/100</h2>
+  // 🔹 ANALISE DA PÁGINA
+  const response = await fetch("/api/analyze", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ url })
+  });
 
-    ${data.checks.map(c=>`<p>${c}</p>`).join("")}
+  const data = await response.json();
+
+  // 🔥 BUSCAR CONCORRENTES REAIS
+  const serpResponse = await fetch("/api/serp", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      keyword: url
+    })
+  });
+
+  const serpData = await serpResponse.json();
+
+  // 🔹 SCORE REALISTA
+  let score = 0;
+
+  if (data.title) score += 20;
+  if (data.h1) score += 20;
+  if (data.meta) score += 20;
+  if (data.length > 300) score += 20;
+  if (data.h2 > 0) score += 10;
+  if (data.h3 > 0) score += 10;
+
+  // 🔹 DIAGNÓSTICO
+  let diagnostico = `
+    <p class="${data.title ? 'ok' : 'bad'}">✔ Title ${data.title ? 'ok' : 'faltando'}</p>
+    <p class="${data.h1 ? 'ok' : 'bad'}">✔ H1 ${data.h1 ? 'ok' : 'faltando'}</p>
+    <p class="${data.meta ? 'ok' : 'bad'}">✔ Meta ${data.meta ? 'ok' : 'faltando'}</p>
+    <p class="${data.length > 300 ? 'ok' : 'warn'}">✔ Conteúdo ${data.length > 300 ? 'bom' : 'baixo'}</p>
+    <p class="${data.h2 > 0 ? 'ok' : 'bad'}">✔ H2 ${data.h2 > 0 ? 'ok' : 'poucos'}</p>
+    <p class="${data.h3 > 0 ? 'ok' : 'bad'}">✔ H3 ${data.h3 > 0 ? 'ok' : 'faltando'}</p>
+  `;
+
+  // 🔥 CONCORRENTES
+  let concorrentesHTML = "<h2>Concorrentes (Top 3 Google)</h2>";
+
+  serpData.results.forEach((c, i) => {
+    concorrentesHTML += `
+      <p><strong>#${i + 1}</strong> - <a href="${c.link}" target="_blank">${c.title}</a></p>
+      <p>${c.snippet || ""}</p>
+      <hr>
+    `;
+  });
+
+  // 🔹 RESULTADO FINAL
+  document.getElementById("resultado").innerHTML = `
+    <h2>Score: ${score}/100</h2>
+
+    <h3>Diagnóstico</h3>
+    ${diagnostico}
 
     <hr>
 
     <h3>Dados</h3>
-    <p><b>Title:</b> ${data.data.title}</p>
-    <p><b>H1:</b> ${data.data.h1}</p>
-    <p><b>Meta:</b> ${data.data.meta}</p>
-    <p><b>Palavras:</b> ${data.data.words}</p>
+    <p><strong>Title:</strong> ${data.title || "Não encontrado"}</p>
+    <p><strong>H1:</strong> ${data.h1 || "Não encontrado"}</p>
+    <p><strong>Meta:</strong> ${data.meta || "Não encontrado"}</p>
+    <p><strong>Palavras:</strong> ${data.length}</p>
 
     <hr>
 
-    <h3>Cluster</h3>
-    ${data.cluster.map(k=>`<p>👉 ${k}</p>`).join("")}
-
-    <hr>
-
-    <h3>Concorrentes</h3>
-    ${data.competitors.map(c=>`
-      <p><b>${c.title}</b><br>
-      Palavras: ${c.words} | H2: ${c.h2}</p>
-    `).join("")}
-
-    <hr>
-
-    <h3>Comparação</h3>
-    <p>Conteúdo: ${data.comparison.content}</p>
-    <p>Estrutura: ${data.comparison.structure}</p>
-
-    <hr>
-
-    <p><b>Intenção:</b> ${data.intent}</p>
+    ${concorrentesHTML}
   `;
-}
-
-function gerarPDF() {
-  const el = document.getElementById("resultado");
-  html2pdf().from(el).save("relatorio-seo.pdf");
 }
 </script>
 
