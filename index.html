@@ -2,23 +2,35 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>SEO Tool</title>
+<title>SEO Score</title>
 
 <style>
-body { font-family: Arial; max-width: 700px; margin: 40px auto; }
-input, button { width: 100%; padding: 10px; margin-top: 10px; }
+body {
+  font-family: Arial;
+  max-width: 700px;
+  margin: 40px auto;
+}
+
+input, button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+.result {
+  margin-top: 20px;
+}
 </style>
 </head>
 
 <body>
 
-<h1>SEO Analyzer</h1>
+<h1>SEO Score</h1>
 
-<input id="url" placeholder="Cole a URL" />
-
+<input id="url" placeholder="Cole a URL (https://...)" />
 <button onclick="analisar()">Analisar</button>
 
-<div id="resultado"></div>
+<div id="resultado" class="result"></div>
 
 <script>
 async function analisar() {
@@ -26,50 +38,44 @@ async function analisar() {
 
   const response = await fetch("/api/analyze", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({ url })
   });
 
   const data = await response.json();
 
   document.getElementById("resultado").innerHTML = `
-    
-    document.getElementById("resultado").innerHTML = `
-<h2>Score: ${data.score}/${data.maxScore}</h2>
+    <h2>Score: ${data.score}/${data.maxScore}</h2>
 
-<h3>📊 Diagnóstico</h3>
-${data.checks.map(c => `<p>${c}</p>`).join("")}
+    <h3>📊 Diagnóstico</h3>
+    ${data.checks.map(c => `<p>${c}</p>`).join("")}
 
-<hr>
+    <hr>
 
-<h3>Title:</h3>
-<p>${data.title}</p>
+    <p><strong>Title:</strong> ${data.title}</p>
+    <p><strong>H1:</strong> ${data.h1}</p>
+    <p><strong>Meta:</strong> ${data.meta}</p>
 
-<h3>H1:</h3>
-<p>${data.h1}</p>
+    <hr>
 
-<h3>Meta:</h3>
-<p>${data.meta}</p>
+    <h3>🔎 Palavras principais</h3>
+    ${data.topWords.map(w => `<p>👉 ${w}</p>`).join("")}
 
-<hr>
+    <hr>
 
-<h3>🔎 Palavras principais</h3>
-${data.topWords.map(w => `<p>👉 ${w}</p>`).join("")}
+    <h3>🧠 Intenção de busca</h3>
+    <p>${data.intent}</p>
 
-<hr>
+    <hr>
 
-<h3>🧠 Intenção de busca</h3>
-<p>${data.intent}</p>
+    <h3>✨ Sugestão de Title</h3>
+    <p>${data.suggestedTitle}</p>
 
-<hr>
-
-<h3>✨ Sugestão de Title</h3>
-<p>${data.suggestedTitle}</p>
-
-<h3>✨ Sugestão de Meta Description</h3>
-<p>${data.suggestedMeta}</p>
-`;
-
+    <h3>✨ Sugestão de Meta Description</h3>
+    <p>${data.suggestedMeta}</p>
+  `;
 }
 </script>
 
