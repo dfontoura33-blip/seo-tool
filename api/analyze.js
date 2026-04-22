@@ -9,70 +9,88 @@ export default async function handler(req, res) {
     const response = await fetch(url);
     const html = await response.text();
 
-    // EXTRAÇÕES
-    const title = html.match(/<title>(.*?)<\/title>/i)?.[1] || null;
-    const h1 = html.match(/<h1[^>]*>(.*?)<\/h1>/i)?.[1] || null;
+    // =========================
+    // EXTRAÇÃO
+    // =========================
+    const title = html.match(/<title>(.*?)<\/title>/i)?.[1] || "";
     const meta =
-      html.match(/<meta name="description" content="(.*?)"/i)?.[1] || null;
+      html.match(/<meta name="description" content="(.*?)"/i)?.[1] || "";
+
+    const h1List = [...html.matchAll(/<h1[^>]*>(.*?)<\/h1>/gi)].map(m => m[1]);
+    const h2List = [...html.matchAll(/<h2[^>]*>(.*?)<\/h2>/gi)].map(m => m[1]);
+    const h3List = [...html.matchAll(/<h3[^>]*>(.*?)<\/h3>/gi)].map(m => m[1]);
 
     const text = html.replace(/<[^>]+>/g, " ").toLowerCase();
     const length = text.length;
 
-    // SCORE
-    let score = 0;
-    let checks = [];
+    // =========================
+    // KEYWORDS (LIMPAS)
+    // =========================
+    const stopwords = ["para", "com", "uma", "como", "mais", "sobre", "entre"];
 
-    if (title) {
-      score += 25;
-      checks.push("✔ Title encontrado");
-    } else {
-      checks.push("❌ Title não encontrado");
-    }
-
-    if (h1) {
-      score += 25;
-      checks.push("✔ H1 encontrado");
-    } else {
-      checks.push("❌ H1 não encontrado");
-    }
-
-    if (meta) {
-      score += 20;
-      checks.push("✔ Meta description presente");
-    } else {
-      checks.push("❌ Meta description ausente");
-    }
-
-    if (length > 300 && length < 20000) {
-      score += 15;
-      checks.push("✔ Conteúdo com tamanho adequado");
-    } else {
-      checks.push("⚠ Conteúdo muito curto ou muito grande");
-    }
-
-    // KEYWORDS
     const words = text
       .replace(/[^\wÀ-ÿ\s]/g, "")
       .split(/\s+/)
-      .filter(w => w.length > 4);
+      .filter(w => w.length > 4 && !stopwords.includes(w));
 
     const freq = {};
     words.forEach(w => {
       freq[w] = (freq[w] || 0) + 1;
     });
 
-    const topWords = Object.entries(freq)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(w => w[0]);
+    const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+    const topWords = sorted.slice(0, 5).map(w => w[0]);
 
-    if (topWords.length) {
+    // =========================
+    // DENSIDADE
+    // =========================
+    const totalWords = words.length;
+    const density = sorted.slice(0, 5).map(([word, count]) => ({
+      word,
+      percent: ((count / totalWords) * 100).toFixed(2)
+    }));
+
+    // =========================
+    // SCORE MAIS INTELIGENTE
+    // =========================
+    let score = 0;
+    let checks = [];
+
+    if (title.length > 10) {
+      score += 20;
+      checks.push("✔ Title ok");
+    } else checks.push("❌ Title fraco");
+
+    if (h1List.length === 1) {
       score += 15;
-      checks.push("✔ Palavras relevantes identificadas");
+      checks.push("✔ H1 único");
+    } else checks.push("❌ Problema no H1");
+
+    if (meta.length > 50) {
+      score += 15;
+      checks.push("✔ Meta boa");
+    } else checks.push("❌ Meta fraca");
+
+    if (length > 3000) {
+      score += 20;
+      checks.push("✔ Conteúdo forte");
+    } else checks.push("⚠ Conteúdo fraco");
+
+    if (h2List.length > 2) {
+      score += 10;
+      checks.push("✔ Estrutura boa (H2)");
+    } else checks.push("❌ Poucos H2");
+
+    if (topWords.length > 0) {
+      score += 10;
+      checks.push("✔ Keywords detectadas");
     }
 
+    // =========================
     // INTENÇÃO
+    // =========================
     let intent = "Informacional";
+
     if (
       text.includes("comprar") ||
       text.includes("preço") ||
@@ -82,46 +100,44 @@ export default async function handler(req, res) {
       intent = "Comercial";
     }
 
-    // 🔥 SUGESTÕES (VERSÃO SEGURA)
-    const main = topWords[0] || "tema";
-    const second = topWords[1] || "";
+    // =========================
+    // SUGESTÕES
+    // =========================
+    const main = topWords[0] || "";
 
-    const suggestedTitles =
-      intent === "Comercial"
-        ? [
-            `${main} ${second} | Melhores opções`,
-            `Encontre ${main} ${second} com qualidade`,
-            `${main} ${second}: serviços e soluções`
-          ]
-        : [
-            `Guia completo sobre ${main} ${second}`,
-            `${main} ${second}: tudo o que você precisa saber`,
-            `Aprenda ${main} ${second} com dicas práticas`
-          ];
+    const suggestedH1 = main
+      ? `${main.charAt(0).toUpperCase() + main.slice(1)}: guia completo`
+      : "";
 
-    const suggestedMeta =
-      intent === "Comercial"
-        ? `Encontre ${main} ${second} com as melhores opções. Veja detalhes e oportunidades.`
-        : `Aprenda tudo sobre ${main} ${second} com dicas práticas e atualizadas.`;
+    const suggestedTitles = [
+      `${main} | Guia completo`,
+      `${main}: tudo o que você precisa saber`,
+      `Como melhorar ${main} (guia prático)`
+    ];
 
+    const suggestedMeta = `Aprenda sobre ${main} com dicas práticas e estratégias atualizadas para melhorar seus resultados.`;
+
+    // =========================
     // RESPOSTA
-    return res.status(200).json({
+    // =========================
+    res.status(200).json({
       score,
       checks,
       title,
-      h1,
       meta,
+      h1: h1List,
+      h2: h2List,
+      h3: h3List,
       length,
       keywords: topWords,
+      density,
       intent,
+      suggestedH1,
       suggestedTitles,
       suggestedMeta
     });
 
   } catch (err) {
-    return res.status(500).json({
-      error: "Erro ao analisar",
-      detalhe: err.message
-    });
+    res.status(500).json({ error: "Erro na análise" });
   }
 }
