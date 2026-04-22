@@ -1,37 +1,25 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <title>SEO Tool</title>
+<meta charset="UTF-8">
+<title>SEO Tool Pro</title>
 
-  <style>
-    body {
-      font-family: Arial;
-      max-width: 600px;
-      margin: 40px auto;
-    }
+<style>
+body { font-family: Arial; max-width: 700px; margin: 40px auto; }
+input, button { width: 100%; padding: 10px; margin-top: 10px; }
+.section { margin-top: 25px; }
+</style>
 
-    input, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-    }
-
-    .result {
-      margin-top: 20px;
-    }
-  </style>
 </head>
 
 <body>
 
 <h1>SEO Score</h1>
 
-<input id="url" placeholder="Cole a URL aqui" />
-
+<input id="url" placeholder="Cole a URL" />
 <button onclick="analisar()">Analisar</button>
 
-<div id="resultado" class="result"></div>
+<div id="resultado"></div>
 
 <script>
 async function analisar() {
@@ -39,9 +27,7 @@ async function analisar() {
 
   const res = await fetch("/api/analyze", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url })
   });
 
@@ -50,27 +36,49 @@ async function analisar() {
   document.getElementById("resultado").innerHTML = `
     <h2>Score: ${data.score}/100</h2>
 
-    ${data.checks.map(c => `<p>${c}</p>`).join("")}
+    <div class="section">
+      <h3>Diagnóstico</h3>
+      ${data.checks.map(c => `<p>${c}</p>`).join("")}
+    </div>
 
-    <hr>
+    <div class="section">
+      <h3>Dados</h3>
+      <p><b>Title:</b> ${data.title}</p>
+      <p><b>Meta:</b> ${data.meta}</p>
+      <p><b>H1:</b> ${data.h1.join(", ")}</p>
+      <p><b>H2:</b> ${data.h2.length}</p>
+      <p><b>H3:</b> ${data.h3.length}</p>
+    </div>
 
-    <p><strong>Title:</strong> ${data.title}</p>
-    <p><strong>H1:</strong> ${data.h1}</p>
-    <p><strong>Meta:</strong> ${data.meta}</p>
+    <div class="section">
+      <h3>Keywords</h3>
+      ${data.keywords.map(k => `<p>👉 ${k}</p>`).join("")}
+    </div>
 
-    <hr>
+    <div class="section">
+      <h3>Densidade</h3>
+      ${data.density.map(d => `<p>${d.word}: ${d.percent}%</p>`).join("")}
+    </div>
 
-    <h3>Palavras principais</h3>
-    ${data.keywords.map(k => `<p>👉 ${k}</p>`).join("")}
+    <div class="section">
+      <h3>Intenção</h3>
+      <p>${data.intent}</p>
+    </div>
 
-    <h3>Intenção</h3>
-    <p>${data.intent}</p>
+    <div class="section">
+      <h3>Sugestão de H1</h3>
+      <p>${data.suggestedH1}</p>
+    </div>
 
-    <h3>Sugestões de Title</h3>
-    ${data.suggestedTitles.map(t => `<p>✨ ${t}</p>`).join("")}
+    <div class="section">
+      <h3>Titles sugeridos</h3>
+      ${data.suggestedTitles.map(t => `<p>✨ ${t}</p>`).join("")}
+    </div>
 
-    <h3>Meta sugerida</h3>
-    <p>${data.suggestedMeta}</p>
+    <div class="section">
+      <h3>Meta sugerida</h3>
+      <p>${data.suggestedMeta}</p>
+    </div>
   `;
 }
 </script>
