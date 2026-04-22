@@ -9,11 +9,13 @@ export default async function handler(req, res) {
     const titleMatch = html.match(/<title>(.*?)<\/title>/i);
     const title = titleMatch ? titleMatch[1].trim() : "Não encontrado";
 
-    // H1
-    const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
-    const h1 = h1Match
-      ? h1Match[1].replace(/<[^>]+>/g, "").trim()
+    // H1 (contar quantos existem)
+    const h1Matches = html.match(/<h1[^>]*>(.*?)<\/h1>/gis);
+    const h1 = h1Matches
+      ? h1Matches[0].replace(/<[^>]+>/g, "").trim()
       : "Não encontrado";
+
+    const h1Count = h1Matches ? h1Matches.length : 0;
 
     // META
     const metaMatch =
@@ -75,41 +77,70 @@ export default async function handler(req, res) {
         ? `Descubra tudo sobre ${topWords.join(", ")}. Veja dicas e soluções completas.`
         : meta;
 
-    // SCORE
+    // =========================
+    // SCORE MAIS INTELIGENTE
+    // =========================
+
     let score = 0;
     let maxScore = 100;
     let checks = [];
 
+    // TITLE
     if (title !== "Não encontrado") {
       score += 20;
       checks.push("✔️ Title encontrado");
+
+      if (title.length >= 30 && title.length <= 60) {
+        score += 5;
+        checks.push("✔️ Title com tamanho ideal");
+      } else {
+        checks.push("⚠️ Title fora do tamanho ideal (30-60)");
+      }
+
     } else {
       checks.push("❌ Title não encontrado");
     }
 
+    // H1
     if (h1 !== "Não encontrado") {
       score += 20;
       checks.push("✔️ H1 encontrado");
+
+      if (h1Count > 1) {
+        checks.push("⚠️ Mais de um H1 encontrado");
+      }
+
     } else {
       checks.push("❌ H1 não encontrado");
     }
 
+    // META
     if (meta !== "Não encontrado") {
       score += 20;
       checks.push("✔️ Meta description presente");
+
+      if (meta.length >= 120 && meta.length <= 160) {
+        score += 5;
+        checks.push("✔️ Meta com tamanho ideal");
+      } else {
+        checks.push("⚠️ Meta fora do tamanho ideal (120-160)");
+      }
+
     } else {
       checks.push("❌ Meta description ausente");
     }
 
-    if (text.length > 500 && text.length < 50000) {
-      score += 20;
+    // CONTEÚDO
+    if (text.length > 800 && text.length < 50000) {
+      score += 15;
       checks.push("✔️ Conteúdo com tamanho adequado");
     } else {
       checks.push("⚠️ Conteúdo muito curto ou muito grande");
     }
 
+    // PALAVRAS
     if (topWords.length >= 3) {
-      score += 20;
+      score += 15;
       checks.push("✔️ Palavras relevantes identificadas");
     } else {
       checks.push("⚠️ Poucas palavras relevantes");
