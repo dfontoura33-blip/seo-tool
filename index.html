@@ -2,22 +2,23 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>SEO Tool</title>
+<title>SEO Tool PRO</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-body { font-family: Arial; max-width: 700px; margin: 40px auto; }
-input, button { width: 100%; padding: 10px; margin-top: 10px; }
-.error { color: red; }
+body { font-family: Arial; max-width: 800px; margin: 40px auto; }
+input, button { width:100%; padding:10px; margin-top:10px; }
 </style>
-
 </head>
 
 <body>
 
-<h1>SEO Score</h1>
+<h1>SEO Tool PRO</h1>
 
-<input id="url" placeholder="Cole a URL" />
+<input id="url" placeholder="Cole a URL"/>
 <button onclick="analisar()">Analisar</button>
+<button onclick="gerarPDF()">Exportar PDF</button>
 
 <div id="resultado"></div>
 
@@ -25,50 +26,60 @@ input, button { width: 100%; padding: 10px; margin-top: 10px; }
 async function analisar() {
   const url = document.getElementById("url").value;
 
-  const box = document.getElementById("resultado");
-  box.innerHTML = "Analisando...";
+  const res = await fetch("/api/analyze", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ url })
+  });
 
-  try {
-    const res = await fetch("/api/analyze", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ url })
-    });
+  const data = await res.json();
 
-    const data = await res.json();
-
-    // 👇 mostra erro da API
-    if (data.error) {
-      box.innerHTML = `<p class="error">Erro: ${data.error}<br>${data.detalhe || ""}</p>`;
-      return;
-    }
-
-    box.innerHTML = `
-      <h2>Score: ${data.score}/100</h2>
-
-      ${data.checks.map(c => `<p>${c}</p>`).join("")}
-
-      <hr>
-
-      <p><b>Title:</b> ${data.data.title}</p>
-      <p><b>H1:</b> ${data.data.h1}</p>
-      <p><b>Meta:</b> ${data.data.meta}</p>
-
-      <p><b>H2:</b> ${data.data.h2Count}</p>
-      <p><b>H3:</b> ${data.data.h3Count}</p>
-      <p><b>Palavras:</b> ${data.data.wordCount}</p>
-
-      <hr>
-
-      <p><b>Intenção:</b> ${data.intent}</p>
-      <p><b>Sugestão de H1:</b> ${data.suggestedH1}</p>
-    `;
-
-  } catch (err) {
-    box.innerHTML = `<p class="error">Erro no front: ${err.message}</p>`;
+  if (data.error) {
+    document.getElementById("resultado").innerHTML = data.error;
+    return;
   }
+
+  document.getElementById("resultado").innerHTML = `
+    <h2>Score: ${data.score}/100</h2>
+
+    ${data.checks.map(c=>`<p>${c}</p>`).join("")}
+
+    <hr>
+
+    <h3>Dados</h3>
+    <p><b>Title:</b> ${data.data.title}</p>
+    <p><b>H1:</b> ${data.data.h1}</p>
+    <p><b>Meta:</b> ${data.data.meta}</p>
+    <p><b>Palavras:</b> ${data.data.words}</p>
+
+    <hr>
+
+    <h3>Cluster</h3>
+    ${data.cluster.map(k=>`<p>👉 ${k}</p>`).join("")}
+
+    <hr>
+
+    <h3>Concorrentes</h3>
+    ${data.competitors.map(c=>`
+      <p><b>${c.title}</b><br>
+      Palavras: ${c.words} | H2: ${c.h2}</p>
+    `).join("")}
+
+    <hr>
+
+    <h3>Comparação</h3>
+    <p>Conteúdo: ${data.comparison.content}</p>
+    <p>Estrutura: ${data.comparison.structure}</p>
+
+    <hr>
+
+    <p><b>Intenção:</b> ${data.intent}</p>
+  `;
+}
+
+function gerarPDF() {
+  const el = document.getElementById("resultado");
+  html2pdf().from(el).save("relatorio-seo.pdf");
 }
 </script>
 
