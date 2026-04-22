@@ -75,10 +75,7 @@ export default async function handler(req, res) {
         ? `Descubra tudo sobre ${topWords.join(", ")}. Veja dicas e soluções completas.`
         : meta;
 
-    // =========================
-    // SCORE (mantido + melhorado)
-    // =========================
-
+    // SCORE
     let score = 0;
     let maxScore = 100;
     let checks = [];
