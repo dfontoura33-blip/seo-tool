@@ -7,11 +7,15 @@ export default async function handler(req, res) {
     const { url } = req.body;
 
     const response = await fetch(url);
-    const html = await response.text();
+    let html = await response.text();
 
     // =========================
-    // EXTRAÇÃO
+    // LIMPEZA REAL (REMOVE JS E CSS)
     // =========================
+    html = html
+      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "");
+
     const title = html.match(/<title>(.*?)<\/title>/i)?.[1] || "";
     const meta =
       html.match(/<meta name="description" content="(.*?)"/i)?.[1] || "";
@@ -20,38 +24,48 @@ export default async function handler(req, res) {
     const h2List = [...html.matchAll(/<h2[^>]*>(.*?)<\/h2>/gi)].map(m => m[1]);
     const h3List = [...html.matchAll(/<h3[^>]*>(.*?)<\/h3>/gi)].map(m => m[1]);
 
-    const text = html.replace(/<[^>]+>/g, " ").toLowerCase();
-    const length = text.length;
+    const text = html
+      .replace(/<[^>]+>/g, " ")
+      .toLowerCase()
+      .replace(/[^\wÀ-ÿ\s]/g, "");
+
+    const words = text.split(/\s+/);
 
     // =========================
-    // KEYWORDS (LIMPAS)
+    // STOPWORDS + FILTRO INTELIGENTE
     // =========================
-    const stopwords = ["para", "com", "uma", "como", "mais", "sobre", "entre"];
+    const stopwords = [
+      "para","com","uma","como","mais","sobre","entre",
+      "http","https","www","index","function","return"
+    ];
 
-    const words = text
-      .replace(/[^\wÀ-ÿ\s]/g, "")
-      .split(/\s+/)
-      .filter(w => w.length > 4 && !stopwords.includes(w));
+    const filtered = words.filter(
+      w => w.length > 4 && !stopwords.includes(w)
+    );
 
     const freq = {};
-    words.forEach(w => {
+    filtered.forEach(w => {
       freq[w] = (freq[w] || 0) + 1;
     });
 
-    const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+    const sorted = Object.entries(freq)
+      .filter(([word]) => !word.includes("document"))
+      .sort((a, b) => b[1] - a[1]);
+
     const topWords = sorted.slice(0, 5).map(w => w[0]);
 
     // =========================
     // DENSIDADE
     // =========================
-    const totalWords = words.length;
+    const total = filtered.length;
+
     const density = sorted.slice(0, 5).map(([word, count]) => ({
       word,
-      percent: ((count / totalWords) * 100).toFixed(2)
+      percent: ((count / total) * 100).toFixed(2)
     }));
 
     // =========================
-    // SCORE MAIS INTELIGENTE
+    // SCORE (mantido)
     // =========================
     let score = 0;
     let checks = [];
@@ -71,7 +85,7 @@ export default async function handler(req, res) {
       checks.push("✔ Meta boa");
     } else checks.push("❌ Meta fraca");
 
-    if (length > 3000) {
+    if (text.length > 3000) {
       score += 20;
       checks.push("✔ Conteúdo forte");
     } else checks.push("⚠ Conteúdo fraco");
@@ -101,21 +115,21 @@ export default async function handler(req, res) {
     }
 
     // =========================
-    // SUGESTÕES
+    // SUGESTÕES INTELIGENTES (BASEADAS NO TITLE)
     // =========================
-    const main = topWords[0] || "";
-
-    const suggestedH1 = main
-      ? `${main.charAt(0).toUpperCase() + main.slice(1)}: guia completo`
-      : "";
+    const base = title.split("|")[0]?.trim() || topWords[0] || "";
 
     const suggestedTitles = [
-      `${main} | Guia completo`,
-      `${main}: tudo o que você precisa saber`,
-      `Como melhorar ${main} (guia prático)`
+      `${base} | Guia completo atualizado`,
+      `${base}: tudo o que você precisa saber`,
+      `${base} vale a pena? Veja análise completa`
     ];
 
-    const suggestedMeta = `Aprenda sobre ${main} com dicas práticas e estratégias atualizadas para melhorar seus resultados.`;
+    const suggestedMeta = meta
+      ? meta
+      : `Veja tudo sobre ${base}, com informações claras, benefícios e dicas práticas para melhores resultados.`;
+
+    const suggestedH1 = h1List[0] || base;
 
     // =========================
     // RESPOSTA
@@ -128,7 +142,6 @@ export default async function handler(req, res) {
       h1: h1List,
       h2: h2List,
       h3: h3List,
-      length,
       keywords: topWords,
       density,
       intent,
