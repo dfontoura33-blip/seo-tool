@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>SEO Score</title>
+<title>SEO Tool</title>
 
 <style>
 body { font-family: Arial; max-width: 700px; margin: 40px auto; }
@@ -12,10 +12,9 @@ input, button { width: 100%; padding: 10px; margin-top: 10px; }
 
 <body>
 
-<h1>SEO Score</h1>
+<h1>SEO Analyzer</h1>
 
 <input id="url" placeholder="Cole a URL" />
-<input id="keyword" placeholder="Palavra-chave principal (opcional)" />
 
 <button onclick="analisar()">Analisar</button>
 
@@ -24,7 +23,6 @@ input, button { width: 100%; padding: 10px; margin-top: 10px; }
 <script>
 async function analisar() {
   const url = document.getElementById("url").value;
-  const keyword = document.getElementById("keyword").value.toLowerCase();
 
   const response = await fetch("/api/analyze", {
     method: "POST",
@@ -34,91 +32,32 @@ async function analisar() {
 
   const data = await response.json();
 
-  let score = 0;
-  let checks = [];
-
-  const text = data.text || "";
-  const wordCount = text.split(/\s+/).length;
-
-  // TITLE
-  if (data.title) { score += 15; checks.push("✔️ Title"); }
-  else checks.push("❌ Sem Title");
-
-  // H1
-  if (data.h1) { score += 15; checks.push("✔️ H1"); }
-  else checks.push("❌ Sem H1");
-
-  // META
-  if (data.meta) { score += 10; checks.push("✔️ Meta"); }
-  else checks.push("❌ Sem Meta");
-
-  // H2
-  if (data.h2Count >= 2) { score += 10; checks.push("✔️ Estrutura com H2"); }
-  else checks.push("⚠️ Poucos H2");
-
-  // TAMANHO
-  if (wordCount > 300 && wordCount < 2000) {
-    score += 10;
-    checks.push("✔️ Conteúdo ideal");
-  } else {
-    checks.push("⚠️ Conteúdo fora do ideal");
-  }
-
-  // KEYWORD (se existir)
-  let density = 0;
-
-  if (keyword) {
-    const occurrences = text.split(keyword).length - 1;
-    density = (occurrences / wordCount) * 100;
-
-    if (data.title?.toLowerCase().includes(keyword)) {
-      score += 10;
-      checks.push("✔️ Keyword no Title");
-    } else {
-      checks.push("❌ Keyword fora do Title");
-    }
-
-    if (data.h1?.toLowerCase().includes(keyword)) {
-      score += 10;
-      checks.push("✔️ Keyword no H1");
-    } else {
-      checks.push("❌ Keyword fora do H1");
-    }
-
-    if (occurrences > 0) {
-      score += 10;
-      checks.push("✔️ Keyword no conteúdo");
-    } else {
-      checks.push("❌ Keyword não encontrada");
-    }
-
-    if (density >= 0.5 && density <= 2.5) {
-      score += 10;
-      checks.push("✔️ Densidade ideal");
-    } else {
-      checks.push("⚠️ Densidade ruim");
-    }
-  }
-
-  // CLASSIFICAÇÃO
-  let nivel = "Ruim", cor = "🔴";
-  if (score >= 80) { nivel = "Excelente"; cor = "🟢"; }
-  else if (score >= 50) { nivel = "Médio"; cor = "🟡"; }
-
   document.getElementById("resultado").innerHTML = `
-    <h2>Score: ${score}/100 - ${cor} ${nivel}</h2>
-
-    ${checks.map(c => `<p>${c}</p>`).join("")}
-
-    ${keyword ? `<p><strong>Densidade:</strong> ${density.toFixed(2)}%</p>` : ""}
-
-    <hr>
+    
+    <h2>📊 Diagnóstico</h2>
 
     <p><strong>Title:</strong> ${data.title}</p>
     <p><strong>H1:</strong> ${data.h1}</p>
-    <p><strong>H2:</strong> ${data.h2Count}</p>
     <p><strong>Meta:</strong> ${data.meta}</p>
-    <p><strong>Palavras:</strong> ${wordCount}</p>
+
+    <hr>
+
+    <h2>🔎 Palavras principais</h2>
+    ${data.topWords.map(w => `<p>👉 ${w}</p>`).join("")}
+
+    <hr>
+
+    <h2>🧠 Intenção de busca</h2>
+    <p>${data.intent}</p>
+
+    <hr>
+
+    <h2>✨ Sugestão de Title</h2>
+    <p>${data.suggestedTitle}</p>
+
+    <h2>✨ Sugestão de Meta Description</h2>
+    <p>${data.suggestedMeta}</p>
+
   `;
 }
 </script>
