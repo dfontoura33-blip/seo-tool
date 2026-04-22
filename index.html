@@ -34,31 +34,42 @@ async function analisar() {
 
   document.getElementById("resultado").innerHTML = `
     
-    <h2>📊 Diagnóstico</h2>
+    document.getElementById("resultado").innerHTML = `
+<h2>Score: ${data.score}/${data.maxScore}</h2>
 
-    <p><strong>Title:</strong> ${data.title}</p>
-    <p><strong>H1:</strong> ${data.h1}</p>
-    <p><strong>Meta:</strong> ${data.meta}</p>
+<h3>📊 Diagnóstico</h3>
+${data.checks.map(c => `<p>${c}</p>`).join("")}
 
-    <hr>
+<hr>
 
-    <h2>🔎 Palavras principais</h2>
-    ${data.topWords.map(w => `<p>👉 ${w}</p>`).join("")}
+<h3>Title:</h3>
+<p>${data.title}</p>
 
-    <hr>
+<h3>H1:</h3>
+<p>${data.h1}</p>
 
-    <h2>🧠 Intenção de busca</h2>
-    <p>${data.intent}</p>
+<h3>Meta:</h3>
+<p>${data.meta}</p>
 
-    <hr>
+<hr>
 
-    <h2>✨ Sugestão de Title</h2>
-    <p>${data.suggestedTitle}</p>
+<h3>🔎 Palavras principais</h3>
+${data.topWords.map(w => `<p>👉 ${w}</p>`).join("")}
 
-    <h2>✨ Sugestão de Meta Description</h2>
-    <p>${data.suggestedMeta}</p>
+<hr>
 
-  `;
+<h3>🧠 Intenção de busca</h3>
+<p>${data.intent}</p>
+
+<hr>
+
+<h3>✨ Sugestão de Title</h3>
+<p>${data.suggestedTitle}</p>
+
+<h3>✨ Sugestão de Meta Description</h3>
+<p>${data.suggestedMeta}</p>
+`;
+
 }
 </script>
 
