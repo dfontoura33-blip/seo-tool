@@ -5,19 +5,15 @@ export default async function handler(req, res) {
     const response = await fetch(url);
     const html = await response.text();
 
-    // TITLE
-    const titleMatch = html.match(/<title>(.*?)<\/title>/i);
-    const title = titleMatch ? titleMatch[1] : null;
+    const title = (html.match(/<title>(.*?)<\/title>/i) || [])[1] || null;
 
-    // H1
-    const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
-    const h1 = h1Match ? h1Match[1].replace(/<[^>]+>/g, "") : null;
+    const h1 = (html.match(/<h1[^>]*>(.*?)<\/h1>/i) || [])[1]?.replace(/<[^>]+>/g, "") || null;
 
-    // META DESCRIPTION
-    const metaMatch = html.match(/<meta name="description" content="(.*?)"/i);
-    const meta = metaMatch ? metaMatch[1] : null;
+    const h2Matches = [...html.matchAll(/<h2[^>]*>(.*?)<\/h2>/gi)];
+    const h2Count = h2Matches.length;
 
-    // LIMPAR HTML → TEXTO
+    const meta = (html.match(/<meta name="description" content="(.*?)"/i) || [])[1] || null;
+
     const text = html
       .replace(/<script[^>]*>.*?<\/script>/gi, "")
       .replace(/<style[^>]*>.*?<\/style>/gi, "")
@@ -25,38 +21,18 @@ export default async function handler(req, res) {
       .toLowerCase();
 
     const words = text.split(/\s+/);
-
-    // STOPWORDS (palavras irrelevantes)
-    const stopwords = [
-      "de","a","o","e","do","da","em","um","para","com","não","uma",
-      "os","no","se","na","por","mais","as","dos","como","mas","foi",
-      "ao","ele","das","tem","à","seu","sua","ou","ser","quando","muito",
-      "há","nos","já","está","eu","também","só","pelo","pela","até"
-    ];
-
-    const freq = {};
-
-    words.forEach(word => {
-      if (word.length > 4 && !stopwords.includes(word)) {
-        freq[word] = (freq[word] || 0) + 1;
-      }
-    });
-
-    // TOP 5 palavras mais frequentes
-    const sugestoes = Object.entries(freq)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(item => item[0]);
+    const length = text.length;
 
     res.status(200).json({
       title,
       h1,
       meta,
-      length: text.length,
-      sugestoes
+      h2Count,
+      text,
+      length
     });
 
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Erro ao analisar URL" });
   }
 }
