@@ -3,29 +3,22 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { url } = req.body;
-
   try {
+    const { url } = req.body;
+
     const response = await fetch(url);
     const html = await response.text();
 
-    // =========================
     // EXTRAÇÕES
-    // =========================
-    const titleMatch = html.match(/<title>(.*?)<\/title>/i);
-    const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
-    const metaMatch = html.match(/<meta name="description" content="(.*?)"/i);
-
-    const title = titleMatch ? titleMatch[1] : null;
-    const h1 = h1Match ? h1Match[1] : null;
-    const meta = metaMatch ? metaMatch[1] : null;
+    const title = html.match(/<title>(.*?)<\/title>/i)?.[1] || null;
+    const h1 = html.match(/<h1[^>]*>(.*?)<\/h1>/i)?.[1] || null;
+    const meta =
+      html.match(/<meta name="description" content="(.*?)"/i)?.[1] || null;
 
     const text = html.replace(/<[^>]+>/g, " ").toLowerCase();
     const length = text.length;
 
-    // =========================
     // SCORE
-    // =========================
     let score = 0;
     let checks = [];
 
@@ -57,9 +50,7 @@ export default async function handler(req, res) {
       checks.push("⚠ Conteúdo muito curto ou muito grande");
     }
 
-    // =========================
     // KEYWORDS
-    // =========================
     const words = text
       .replace(/[^\wÀ-ÿ\s]/g, "")
       .split(/\s+/)
@@ -75,16 +66,13 @@ export default async function handler(req, res) {
       .slice(0, 5)
       .map(w => w[0]);
 
-    if (topWords.length > 0) {
+    if (topWords.length) {
       score += 15;
       checks.push("✔ Palavras relevantes identificadas");
     }
 
-    // =========================
-    // INTENÇÃO DE BUSCA
-    // =========================
+    // INTENÇÃO
     let intent = "Informacional";
-
     if (
       text.includes("comprar") ||
       text.includes("preço") ||
@@ -94,40 +82,30 @@ export default async function handler(req, res) {
       intent = "Comercial";
     }
 
-    // =========================
-    // SUGESTÕES PROFISSIONAIS
-    // =========================
-    const main = topWords[0] || "";
+    // 🔥 SUGESTÕES (VERSÃO SEGURA)
+    const main = topWords[0] || "tema";
     const second = topWords[1] || "";
 
-    let suggestedTitles = [];
+    const suggestedTitles =
+      intent === "Comercial"
+        ? [
+            `${main} ${second} | Melhores opções`,
+            `Encontre ${main} ${second} com qualidade`,
+            `${main} ${second}: serviços e soluções`
+          ]
+        : [
+            `Guia completo sobre ${main} ${second}`,
+            `${main} ${second}: tudo o que você precisa saber`,
+            `Aprenda ${main} ${second} com dicas práticas`
+          ];
 
-    if (intent === "Comercial") {
-      suggestedTitles = [
-        `${main} ${second} | Melhores opções e serviços`,
-        `Encontre ${main} ${second} com qualidade`,
-        `${main} ${second}: soluções completas para você`
-      ];
-    } else {
-      suggestedTitles = [
-        `Guia completo sobre ${main} ${second}`,
-        `${main} ${second}: tudo o que você precisa saber`,
-        `Aprenda sobre ${main} ${second} com dicas práticas`
-      ];
-    }
+    const suggestedMeta =
+      intent === "Comercial"
+        ? `Encontre ${main} ${second} com as melhores opções. Veja detalhes e oportunidades.`
+        : `Aprenda tudo sobre ${main} ${second} com dicas práticas e atualizadas.`;
 
-    let suggestedMeta = "";
-
-    if (intent === "Comercial") {
-      suggestedMeta = `Encontre ${main} ${second} com as melhores opções do mercado. Veja detalhes, preços e oportunidades.`;
-    } else {
-      suggestedMeta = `Aprenda tudo sobre ${main} ${second} com dicas práticas e estratégias atualizadas.`;
-    }
-
-    // =========================
-    // RESPOSTA FINAL
-    // =========================
-    res.status(200).json({
+    // RESPOSTA
+    return res.status(200).json({
       score,
       checks,
       title,
@@ -140,7 +118,10 @@ export default async function handler(req, res) {
       suggestedMeta
     });
 
-  } catch (error) {
-    res.status(500).json({ error: "Erro ao analisar URL" });
+  } catch (err) {
+    return res.status(500).json({
+      error: "Erro ao analisar",
+      detalhe: err.message
+    });
   }
 }
