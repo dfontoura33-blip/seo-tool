@@ -81,12 +81,15 @@
       checks.push("❌ Meta description ausente");
     }
 
-    if (data.length > 300 && data.length < 200000) {
-      score += 25;
-      checks.push("✔️ Conteúdo com tamanho adequado");
-    } else {
-      checks.push("⚠️ Conteúdo fora do ideal");
-    }
+    if (data.length > 300 && data.length < 20000) {
+  score += 25;
+  checks.push("✔️ Conteúdo com tamanho adequado");
+} else if (data.length >= 20000) {
+  score += 10;
+  checks.push("⚠️ Conteúdo muito grande");
+} else {
+  checks.push("❌ Conteúdo muito curto");
+}
 
     // KEYWORDS
     if (keywords.length > 0) {
